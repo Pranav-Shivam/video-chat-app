@@ -8,6 +8,47 @@ import peerService from "../../lib/peer";
 // Import ReactPlayer dynamically to avoid SSR issues
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
+// Component for controlling the stream (mute/unmute mic and turn on/off video)
+function StreamControls({ stream }) {
+  const [micEnabled, setMicEnabled] = useState(true);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+
+  const toggleMic = () => {
+    if (stream) {
+      stream.getAudioTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+      setMicEnabled((prev) => !prev);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (stream) {
+      stream.getVideoTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+      setVideoEnabled((prev) => !prev);
+    }
+  };
+
+  return (
+    <div className="stream-controls text-center my-4">
+      <button 
+        onClick={toggleMic} 
+        className="bg-gray-700 text-white px-4 py-2 rounded mr-2 hover:bg-gray-800"
+      >
+        {micEnabled ? "Mute Mic" : "Unmute Mic"}
+      </button>
+      <button 
+        onClick={toggleVideo} 
+        className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+      >
+        {videoEnabled ? "Turn Off Video" : "Turn On Video"}
+      </button>
+    </div>
+  );
+}
+
 export default function RoomPage() {
   const socket = useSocket();
   const [remoteSocketId, setRemoteSocketId] = useState(null);
@@ -26,14 +67,10 @@ export default function RoomPage() {
       setConnectionStatus("Connected to server. Waiting for other users...");
     } else {
       setConnectionStatus("Reconnecting to server...");
-      
-      // Listen for connect event
       const onConnect = () => {
         setConnectionStatus("Connected to server. Waiting for other users...");
       };
-      
       socket.on('connect', onConnect);
-      
       return () => {
         socket.off('connect', onConnect);
       };
@@ -182,7 +219,6 @@ export default function RoomPage() {
 
   useEffect(() => {
     if (!socket) return;
-    
     console.log("Setting up socket event listeners");
     socket.on("user:joined", handleUserJoined);
     socket.on("incomming:call", handleIncommingCall);
@@ -243,6 +279,9 @@ export default function RoomPage() {
           </button>
         )}
       </div>
+
+      {/* Render stream controls if a local stream is available */}
+      {myStream && <StreamControls stream={myStream} />}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {myStream && (
