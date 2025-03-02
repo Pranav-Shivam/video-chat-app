@@ -23,6 +23,7 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     // Create socket connection
     const socketInstance = io('http://localhost:8033', {
+      autoConnect: true,
       transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
